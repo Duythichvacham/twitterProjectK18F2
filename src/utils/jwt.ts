@@ -14,6 +14,7 @@ export const signToken = ({
 }) => {
   // nó truyền tùm lum thì mình k biết đc nếu k định nghĩa
   return new Promise<string>((resolve, reject) => {
+    // ký xong mới trả data - nên dùng promise
     jwt.sign(payload, privateKey, options, (err, token) => {
       if (err) throw reject(err)
       resolve(token as string)

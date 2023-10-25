@@ -3,13 +3,13 @@ import { loginController } from '~/controllers/users.controller'
 import { loginValidator, registerValidator } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'
 const usersRouter = Router()
-
+import { wrapAsync } from '~/utils/handler'
 //controller - Router
-usersRouter.post('/login', loginValidator, loginController)
+usersRouter.post('/login', loginValidator, wrapAsync(loginController))
 /*
 // quy ước: value trong mongo dùng cú pháp snake_case
 Description: Register new user
-Path: /register\
+Path: /register
 Metho: POST
 body:{ 
     name: string
@@ -24,5 +24,5 @@ body:{
     vào trang web bất kì gõ như trên để lấy đoạn date theo chuẩn ISOString
 }
 */
-usersRouter.post('/register', registerValidator, registerController)
+usersRouter.post('/register', registerValidator, wrapAsync(registerController))
 export default usersRouter
