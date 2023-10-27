@@ -1,5 +1,4 @@
 import { createHash } from 'crypto'
-import { create } from 'domain'
 import { config } from 'dotenv'
 config()
 // tạo 1 hàm nhận vào chuỗi là mã hóa theo chuẩn SHA256

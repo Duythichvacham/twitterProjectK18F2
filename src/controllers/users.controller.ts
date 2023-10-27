@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
 import userService from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { RegisterReqBody } from '~/models/requests/User.requests'
+import { LoginReqBody, LogoutReqBody, RegisterReqBody } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
-export const loginController = async (req: Request, res: Response) => {
+export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   // vô đến đây là đăng nhập thành công
   // server tạo access token và refresh token để đưa cho client
   const user = req.user as User // user này có thể là user or undefined mà mình biết nó là gì nên địng nghĩa luôn
@@ -30,7 +30,7 @@ export const registerController = async (
     result
   })
 }
-export const logoutController = async (req: Request, res: Response) => {
+export const logoutController = async (req: Request<ParamsDictionary, any, LogoutReqBody>, res: Response) => {
   const { refresh_token } = req.body
   // logout thì nhận => tìm và xóa refresh token trong db
   const result = await userService.logout(refresh_token)

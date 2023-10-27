@@ -1,6 +1,6 @@
 // hàm tiện ích - xài chung
 import { Request, Response, NextFunction } from 'express'
-import { body, validationResult, ValidationChain } from 'express-validator'
+import { validationResult, ValidationChain } from 'express-validator'
 // can be reused by many routes
 import { RunnableValidationChains } from 'express-validator/src/middlewares/schema'
 import { EntityError, ErrorWithStatus } from '~/models/Errors'
