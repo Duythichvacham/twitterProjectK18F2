@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { NextFunction, Request, Response, Router } from 'express'
 import { loginController } from '~/controllers/users.controller'
 import { loginValidator, registerValidator } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'
@@ -10,7 +10,7 @@ usersRouter.post('/login', loginValidator, wrapAsync(loginController))
 // quy ước: value trong mongo dùng cú pháp snake_case
 Description: Register new user
 Path: /register
-Metho: POST
+Method: POST
 body:{ 
     name: string
     email: string

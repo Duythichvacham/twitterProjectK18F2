@@ -17,7 +17,7 @@ type ErrorsType = Record<
   string,
   {
     msg: string
-    [key: string]: any //này nghĩa ra ngoài ra muốn thêm vào gì thì thêm
+    [key: string]: any //
   }
 >
 // { [key: string]:  {
