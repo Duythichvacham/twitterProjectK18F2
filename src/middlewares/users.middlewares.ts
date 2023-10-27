@@ -3,6 +3,7 @@
 //client sẽ tạo 1 req gửi server
 // username và pass sẽ nằm ở req.body
 // viết 1 middlewares xử lý validator của req body
+import { Request } from 'express'
 import { checkSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { capitalize } from 'lodash'
@@ -207,7 +208,7 @@ export const accessTokenValidator = validate(
               // nếu có accessToken thì mình phải verify AccessToken
               const decoded_authorization = await verifyToken({ token: accessToken })
               // lấy ra decoded_authorization(payload), lưu vào req, để dùng dần
-              req.decoded_authorization = decoded_authorization
+              ;(req as Request).decoded_authorization = decoded_authorization
             } catch (err) {
               throw new ErrorWithStatus({
                 message: capitalize((err as JsonWebTokenError).message), // mình biết nó phát sinh lỗi trong phạm vi jwt chỉ có thể là...
@@ -222,4 +223,53 @@ export const accessTokenValidator = validate(
     ['headers']
   )
 )
-export const refreshTokenValidator = validate(checkSchema({}))
+export const refreshTokenValidator = validate(
+  checkSchema(
+    {
+      refresh_token: {
+        trim: true,
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string, { req }) => {
+            //verify refresh_token để lấy decoded_refresh_token
+            // nếu k try catch thì nó sẽ nó sẽ đi vào validate()
+            // thằng này có tận 2 lỗi khác nhau nên phải có 2 xử lý khác nhau:
+            // 2 nhiệm vụ: 1 là verify refresh_token - do jwt, 2 là tìm xem refresh_token có tồn tại trong db k
+            try {
+              const [decoded_refresh_token, refresh_token] = await Promise.all([
+                verifyToken({ token: value }),
+                databaseService.refreshTokens.findOne({
+                  token: value
+                })
+              ]) // lỗi này do jwt tạo ra
+              // tìm xem refresh_token có tồn tại trong db k
+              // thuộc tính token trong collection refreshTokens - éo có cái nào là refresh_token
+              // có thể thất bại: lỗi - or =null
+
+              if (refresh_token === null) {
+                // lỗi mình tự tạo ra nếu nó truyền sai refresh_token
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.USED_REFRESH_TOKEN_OR_NOT_EXIST,
+                  status: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+              ;(req as Request).decoded_refresh_token = decoded_refresh_token
+            } catch (err) {
+              if (err instanceof JsonWebTokenError) {
+                // nếu lỗi do jwt tạo ra
+                throw new ErrorWithStatus({
+                  message: capitalize((err as JsonWebTokenError).message), // mình biết nó phát sinh lỗi trong phạm vi jwt chỉ có thể là...
+                  status: HTTP_STATUS.UNAUTHORIZED // bản thân nó k có status nên phải tạo ra
+                })
+              }
+              throw err // nếu lỗi do mình tạo ra thì nó sẽ throw err
+            }
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)

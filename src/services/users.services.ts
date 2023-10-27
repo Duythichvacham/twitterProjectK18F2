@@ -7,6 +7,7 @@ import { signToken } from '~/utils/jwt'
 import { config } from 'dotenv'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { ObjectId } from 'mongodb'
+import { USERS_MESSAGES } from '~/constants/messages'
 config()
 class UserService {
   // hàm nhận vào user_id và bỏ vào payload để tạo access_token
@@ -63,6 +64,11 @@ class UserService {
     )
     return { access_token, refresh_token }
   }
+  async logout(refresh_token: string) {
+    await databaseService.refreshTokens.deleteOne({ token: refresh_token })
+    return { message: USERS_MESSAGES.LOGOUT_SUCCESS }
+  }
 }
+
 const userService = new UserService()
 export default userService
