@@ -26,7 +26,9 @@ export const USERS_MESSAGES = {
   //user
   EMAIL_OR_PASSWORD_IS_INCORRECT: 'Email or password is incorrect',
   LOGIN_SUCCESS: 'Login success',
-  REGISTER_SUCCESS: 'Register success'
+  REGISTER_SUCCESS: 'Register success',
+  ACCESS_TOKEN_IS_REQUIRED: 'Access token is required',
+  REFRESH_TOKEN_IS_REQUIRED: 'Refresh token is required'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client

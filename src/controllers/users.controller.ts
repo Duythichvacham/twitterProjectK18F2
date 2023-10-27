@@ -30,3 +30,6 @@ export const registerController = async (
     result
   })
 }
+export const logoutController = async (req: Request, res: Response) => {
+  res.json({})
+}

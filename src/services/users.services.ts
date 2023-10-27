@@ -58,7 +58,7 @@ class UserService {
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
         token: refresh_token,
-        user_id: new ObjectId(user_id)
+        user_id: new ObjectId(user_id.toString())
       })
     )
     return { access_token, refresh_token }

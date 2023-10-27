@@ -21,3 +21,20 @@ export const signToken = ({
     })
   })
 }
+// hàm nhận vào token và privateKey để verify, [options,callback] tự code
+export const verifyToken = ({
+  token,
+  secretOrPublicKey = process.env.JWT_SECRET as string
+}: {
+  token: string
+  secretOrPublicKey?: string
+}) => {
+  // ký chữ ký luôn có khả năng phát sinh err
+  return new Promise<jwt.JwtPayload>((resolve, reject) => {
+    jwt.verify(token, secretOrPublicKey, (err, decoded) => {
+      // thằng này nó kiểm tra token của mình hết hạn hay chưa đc luôn
+      if (err) throw reject(err)
+      resolve(decoded as jwt.JwtPayload)
+    }) // decoded là cái payload
+  })
+}
