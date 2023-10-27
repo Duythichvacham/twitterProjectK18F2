@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from 'express'
+import { Router } from 'express'
 import { loginController } from '~/controllers/users.controller'
 import { loginValidator, registerValidator } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'

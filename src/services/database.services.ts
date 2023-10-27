@@ -1,6 +1,7 @@
 import { MongoClient, Db, Collection } from 'mongodb'
 import { config } from 'dotenv'
 import User from '~/models/schemas/User.schema'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
 config()
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@tweetpiedteam.li8biqc.mongodb.net/?retryWrites=true&w=majority`
 // process giúp truy cập vào khu vực env
@@ -25,7 +26,11 @@ class DatabaseService {
   get users(): Collection<User> {
     // mặc định nó là doc mà mình đã định nghĩa User r thì dùng thôi
     return this.db.collection(process.env.DB_USERS_COLLECTION as string) // mình tạo nên mình biết nó là string
-  }
+  } // nếu chưa có thì nó tạo cho mình còn nếu có thì nó lấy trong db
+  get refreshTokens(): Collection<RefreshToken> {
+    // mặc định nó là doc mà mình đã định nghĩa User r thì dùng thôi
+    return this.db.collection(process.env.DB_REFRESH_TOKENS_COLLECTION as string) // mình tạo nên mình biết nó là string
+  } // nếu chưa có thì nó tạo cho mình còn nếu có thì nó lấy trong db
 }
 const databaseService = new DatabaseService() // nếu export class cứ mỗi lần call tại phải tạo obj rất phiền
 export default databaseService
