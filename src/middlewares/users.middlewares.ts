@@ -192,12 +192,11 @@ export const accessTokenValidator = validate(
     {
       Authorization: {
         trim: true, // xóa khoảng trắng ở đầu và cuối tránh lỗi
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
-        },
         custom: {
           options: async (value: string, { req }) => {
-            const accessToken = value.split(' ')[1] // băm đc 2 thằng thì accessToken ở index 1 - ở đây có mỗi 2 thằng bearer AccessToken
+            //nếu value là null thì ta sẽ gán nó bằng chuỗi rỗng
+            //thì khi băm ra nó vẫn là chuỗi ""
+            const accessToken = (value || '').split(' ')[1] // băm đc 2 thằng thì accessToken ở index 1 - ở đây có mỗi 2 thằng bearer AccessToken
             if (!accessToken) {
               throw new ErrorWithStatus({
                 message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED,
@@ -206,7 +205,10 @@ export const accessTokenValidator = validate(
             }
             try {
               // nếu có accessToken thì mình phải verify AccessToken
-              const decoded_authorization = await verifyToken({ token: accessToken })
+              const decoded_authorization = await verifyToken({
+                token: accessToken,
+                secretOrPublicKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+              })
               // lấy ra decoded_authorization(payload), lưu vào req, để dùng dần
               ;(req as Request).decoded_authorization = decoded_authorization
             } catch (err) {
@@ -239,7 +241,7 @@ export const refreshTokenValidator = validate(
             // 2 nhiệm vụ: 1 là verify refresh_token - do jwt, 2 là tìm xem refresh_token có tồn tại trong db k
             try {
               const [decoded_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value }),
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_SECRET_REFRESH_TOKEN as string }),
                 databaseService.refreshTokens.findOne({
                   token: value
                 })

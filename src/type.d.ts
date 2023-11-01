@@ -1,3 +1,4 @@
+// file này để định nghĩa lại các module mà mình sử dụng
 // định nghĩa lại request truyền lên
 import { Request } from 'express'
 import User from './models/schemas/User.schema'

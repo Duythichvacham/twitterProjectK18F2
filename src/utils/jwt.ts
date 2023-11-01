@@ -6,11 +6,11 @@ import { TokenPayLoad } from '~/models/requests/User.requests'
 config()
 export const signToken = ({
   payload,
-  privateKey = process.env.JWT_SECRET as string,
+  privateKey,
   options = { algorithm: 'HS256' }
 }: {
   payload: string | object | Buffer
-  privateKey?: string
+  privateKey: string
   options: jwt.SignOptions
 }) => {
   // nó truyền tùm lum thì mình k biết đc nếu k định nghĩa
@@ -23,13 +23,7 @@ export const signToken = ({
   })
 }
 // hàm nhận vào token và privateKey để verify, [options,callback] tự code
-export const verifyToken = ({
-  token,
-  secretOrPublicKey = process.env.JWT_SECRET as string
-}: {
-  token: string
-  secretOrPublicKey?: string
-}) => {
+export const verifyToken = ({ token, secretOrPublicKey }: { token: string; secretOrPublicKey: string }) => {
   // ký chữ ký luôn có khả năng phát sinh err
   return new Promise<TokenPayLoad>((resolve, reject) => {
     jwt.verify(token, secretOrPublicKey, (err, decoded) => {
@@ -41,3 +35,5 @@ export const verifyToken = ({
     }) // decoded là cái payload
   })
 }
+// bản chất khi payload truyền lên có mã hóa hay k nó đều dùng được
+// tuy nhiên nó cần verify để xác nhận xem có nên - có được sử dụng hay k
