@@ -1,10 +1,15 @@
 import { NextFunction, Request, Response } from 'express'
 import userService from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { LoginReqBody, LogoutReqBody, RegisterReqBody } from '~/models/requests/User.requests'
+import { LoginReqBody, LogoutReqBody, RegisterReqBody, TokenPayLoad } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
+import { UserVerifyStatus } from '~/constants/enums'
+import databaseService from '~/services/database.services'
+import HTTP_STATUS from '~/constants/httpstatus'
+import { ErrorWithStatus } from '~/models/Errors'
+import { error } from 'console'
 export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   // vô đến đây là đăng nhập thành công
   // server tạo access token và refresh token để đưa cho client
@@ -35,4 +40,49 @@ export const logoutController = async (req: Request<ParamsDictionary, any, Logou
   // logout thì nhận => tìm và xóa refresh token trong db
   const result = await userService.logout(refresh_token)
   res.json(result)
+}
+
+export const emailVerifyController = async (req: Request, res: Response) => {
+  const { user_id } = req.decoded_email_verify_token as TokenPayLoad
+  const user = req.user as User
+  if (user.verify === UserVerifyStatus.Verified) {
+    return res.json({
+      message: USERS_MESSAGES.EMAIL_ALREADY_VERIFIED_BEFORE
+    })
+  }
+  // nếu xuống đây tức là chưa verify, chưa bị banned, và mã khớp
+  // tiến hành verify - chỉnh 3 thằng
+  const result = await userService.verifyEmail(user_id)
+  return res.json({
+    message: USERS_MESSAGES.EMAIL_VERIFY_SUCCESS,
+    result
+  })
+}
+// resend khi thất lạc email verify token
+export const resendEmailVerifyController = async (req: Request, res: Response) => {
+  // nếu code vào được đây tức là đã đi qua tầng accessTokenValidator
+  // trong req có decoded_authorization
+  const { user_id } = req.decoded_authorization as TokenPayLoad
+  // tìm user trong db
+  const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
+  // nếu k có
+  if (!user) {
+    throw new ErrorWithStatus({ message: USERS_MESSAGES.USER_NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
+  }
+  // banned
+  if (user.verify === UserVerifyStatus.Banned) {
+    throw new ErrorWithStatus({ message: USERS_MESSAGES.USER_BANNED, status: HTTP_STATUS.FORBIDDEN })
+  }
+  // verified
+  if (user.verify === UserVerifyStatus.Verified) {
+    return res.json({
+      message: USERS_MESSAGES.EMAIL_ALREADY_VERIFIED_BEFORE
+    })
+  }
+  // chưa verify
+  const result = await userService.verifyEmail(user_id)
+  return res.json({
+    message: USERS_MESSAGES.EMAIL_VERIFY_SUCCESS,
+    result
+  })
 }

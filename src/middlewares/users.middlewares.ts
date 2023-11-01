@@ -7,6 +7,8 @@ import { Request } from 'express'
 import { checkSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { capitalize } from 'lodash'
+import { ObjectId } from 'mongodb'
+import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpstatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -230,9 +232,6 @@ export const refreshTokenValidator = validate(
     {
       refresh_token: {
         trim: true,
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
-        },
         custom: {
           options: async (value: string, { req }) => {
             //verify refresh_token để lấy decoded_refresh_token
@@ -258,6 +257,74 @@ export const refreshTokenValidator = validate(
                 })
               }
               ;(req as Request).decoded_refresh_token = decoded_refresh_token
+            } catch (err) {
+              if (err instanceof JsonWebTokenError) {
+                // nếu lỗi do jwt tạo ra
+                throw new ErrorWithStatus({
+                  message: capitalize((err as JsonWebTokenError).message), // mình biết nó phát sinh lỗi trong phạm vi jwt chỉ có thể là...
+                  status: HTTP_STATUS.UNAUTHORIZED // bản thân nó k có status nên phải tạo ra
+                })
+              }
+              throw err // nếu lỗi do mình tạo ra thì nó sẽ throw err
+            }
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)
+export const emailVerifyTokenValidator = validate(
+  checkSchema(
+    {
+      email_verify_token: {
+        trim: true,
+        custom: {
+          options: async (value: string, { req }) => {
+            //verify refresh_token để lấy decoded_refresh_token
+            // nếu k try catch thì nó sẽ nó sẽ đi vào validate()
+            // thằng này có tận 2 lỗi khác nhau nên phải có 2 xử lý khác nhau:
+            // 2 nhiệm vụ: 1 là verify refresh_token - do jwt, 2 là tìm xem refresh_token có tồn tại trong db k
+
+            if (!value) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_IS_REQUIRED,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            try {
+              //verify email_verify_token để lấy decoded_email_verify_token
+              const decoded_email_verify_token = await verifyToken({
+                token: value,
+                secretOrPublicKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string
+              })
+              ;(req as Request).decoded_email_verify_token = decoded_email_verify_token
+              // lấy user_id từ decoded_email_verify_token để tìm thằng sở hữu
+              const user_id = decoded_email_verify_token.user_id
+              const user = await databaseService.users.findOne({
+                _id: new ObjectId(user_id)
+              })
+              if (!user) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.USER_NOT_FOUND,
+                  status: HTTP_STATUS.NOT_FOUND
+                }) // nếu k tìm thấy user thì throw lỗi
+              }
+              // nếu có user thì check xem bị band chưa
+              req.user = user // lưu user vào req để dùng ở controller
+              if (user.verify === UserVerifyStatus.Banned) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.USER_BANNED,
+                  status: HTTP_STATUS.FORBIDDEN // 403
+                })
+              }
+              // nếu đang gửi bị lỗi - nó resend: mình phải xóa mã cũ đưa mã mới => nếu nó khác thằng đang lưu thì cút
+              if (user.verify != UserVerifyStatus.Verified && user.email_verify_token !== value) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_NOT_MATCH,
+                  status: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
             } catch (err) {
               if (err instanceof JsonWebTokenError) {
                 // nếu lỗi do jwt tạo ra

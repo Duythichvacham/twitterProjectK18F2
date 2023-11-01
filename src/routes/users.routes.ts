@@ -1,7 +1,13 @@
 import { Router } from 'express'
-import { loginController, logoutController } from '~/controllers/users.controller'
+import {
+  emailVerifyController,
+  loginController,
+  logoutController,
+  resendEmailVerifyController
+} from '~/controllers/users.controller'
 import {
   accessTokenValidator,
+  emailVerifyTokenValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator
@@ -38,4 +44,32 @@ body: {refresh_token: string}
 
 */
 usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController))
+
+// thường ngta sẽ k gửi đoạn token lên email cho client luôn mà là gửi 1 link chứa token
+// khi ngta click vào link thì mới gửi token lên server
+// nếu nó chưa verify : verify == 0
+//=> vào database cập nhật: chỉnh email_verify_token = "", verify = 1,update_at new Date()
+
+/*link có email_verify_token: - 
+des: verify email
+method : POST
+path: /users/verify-email?token=<> -- thường nó là vậy
+* mình truyền qua body
+path: /users/verify-email
+body:{
+  email_verify_token: string
+}
+*/
+usersRouter.post('/verify-email', emailVerifyTokenValidator, wrapAsync(emailVerifyController))
+/*
+des: resend verify email
+method: post
+path: /users/resend-verify-email
+header:{
+  Authorization: "Bearer <access_token>"
+}
+// có 2 cách: 1 nếu theo hướng phải verify email thì mới cho đăng nhập thì gửi lại email pass thông qua body
+// mình theo hướng đăng nhập rồi mới cần verify email thì gửi access qua header để xác nhận
+ */
+usersRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
 export default usersRouter

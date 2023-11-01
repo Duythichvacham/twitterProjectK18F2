@@ -17,3 +17,4 @@ app.use(defaultErrorHandler)
 app.listen(port, () => {
   console.log(`Project twitter này đang chạy trên post ${port}`)
 })
+// dạng app mình làm: verify email để xài thêm tính năng
