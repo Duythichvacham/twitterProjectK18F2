@@ -9,7 +9,6 @@ import { UserVerifyStatus } from '~/constants/enums'
 import databaseService from '~/services/database.services'
 import HTTP_STATUS from '~/constants/httpstatus'
 import { ErrorWithStatus } from '~/models/Errors'
-import { error } from 'console'
 export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   // vô đến đây là đăng nhập thành công
   // server tạo access token và refresh token để đưa cho client
@@ -80,9 +79,22 @@ export const resendEmailVerifyController = async (req: Request, res: Response) =
     })
   }
   // chưa verify
-  const result = await userService.verifyEmail(user_id)
+  const result = await userService.resendEmailVerify(user_id)
   return res.json({
     message: USERS_MESSAGES.EMAIL_VERIFY_SUCCESS,
     result
+  })
+}
+// forgot password
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  // lấy user_id từ req.user
+  const { _id } = req.user as User
+  // update  lại  forgot_password_token
+  const result = await userService.forgotPassword((_id as ObjectId).toString())
+  return res.json(result)
+}
+export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
+  return res.json({
+    message: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_SUCCESS
   })
 }

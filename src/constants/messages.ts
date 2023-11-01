@@ -37,7 +37,12 @@ export const USERS_MESSAGES = {
   USER_BANNED: 'User banned',
   EMAIL_VERIFY_TOKEN_NOT_MATCH: 'Email verify token not match',
   EMAIL_ALREADY_VERIFIED_BEFORE: 'Email already verified before',
-  EMAIL_VERIFY_SUCCESS: 'Email verify success'
+  EMAIL_VERIFY_SUCCESS: 'Email verify success',
+  RESEND_EMAIL_VERIFY_SUCCESS: 'Resend email verify success',
+  CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password',
+  FORGOT_PASSWORD_TOKEN_IS_REQUIRED: 'Forgot password token is required',
+  FORGOT_PASSWORD_TOKEN_NOT_MATCH: 'Forgot password token not match',
+  FORGOT_PASSWORD_TOKEN_SUCCESS: 'Forgot password token success'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client

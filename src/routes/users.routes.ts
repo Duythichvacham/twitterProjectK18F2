@@ -1,20 +1,25 @@
 import { Router } from 'express'
 import {
   emailVerifyController,
+  forgotPasswordController,
   loginController,
   logoutController,
-  resendEmailVerifyController
+  resendEmailVerifyController,
+  verifyForgotPasswordTokenController
 } from '~/controllers/users.controller'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
-  registerValidator
+  registerValidator,
+  verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'
 const usersRouter = Router()
 import { wrapAsync } from '~/utils/handler'
+import { verify } from 'crypto'
 //controller - Router
 usersRouter.get('/login', loginValidator, wrapAsync(loginController))
 /*
@@ -72,4 +77,26 @@ header:{
 // mình theo hướng đăng nhập rồi mới cần verify email thì gửi access qua header để xác nhận
  */
 usersRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
+/*forgot-password
+des: forgot password
+method: post
+path: /users/forgot-password
+body:{
+  email: string
+}
+*/
+usersRouter.post('/forgot-password', forgotPasswordValidator, wrapAsync(forgotPasswordController))
+/*verify forgot-passwordToken
+des: verify forgot password 
+method: post
+path: /users/verify-forgot-password
+body:{
+  forgot_password_token: string
+}
+ */
+usersRouter.post(
+  '/verify-forgot-password',
+  verifyForgotPasswordTokenValidator,
+  wrapAsync(verifyForgotPasswordTokenController)
+)
 export default usersRouter

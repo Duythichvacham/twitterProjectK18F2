@@ -38,6 +38,13 @@ class UserService {
       options: { expiresIn: process.env.EMAIL_VERIFY_TOKEN_EXPIRE_IN }
     })
   }
+  private signForgotPassword(user_id: string) {
+    return signToken({
+      payload: { user_id, token_type: TokenType.EmailVerificationToken },
+      privateKey: process.env.JWT_SECRET_FORGOT_PASSWORD_TOKEN as string,
+      options: { expiresIn: process.env.FORGOT_PASSWORD_TOKEN_EXPIRE_IN }
+    })
+  }
   async checkEmailExist(email: string) {
     const user = await databaseService.users.findOne({ email })
     return Boolean(user)
@@ -111,6 +118,46 @@ class UserService {
       })
     )
     return { access_token, refresh_token }
+  }
+  async resendEmailVerify(user_id: string) {
+    const email_verify_token = await this.signEmailVerifyToken(user_id)
+    // cập nhật lại user
+    await databaseService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      }, // filter
+      [
+        {
+          $set: {
+            email_verify_token,
+            updated_at: '$$NOW' // lấy thời gian hiện tại khi nó lên đến mongo - đây là thuộc tính của mongo
+          }
+        }
+      ]
+    )
+    // giả lập gửi mail
+    console.log(email_verify_token)
+    return { message: USERS_MESSAGES.RESEND_EMAIL_VERIFY_SUCCESS }
+  }
+  async forgotPassword(user_id: string) {
+    const forgot_password_token = await this.signForgotPassword(user_id)
+    // cập nhật lại user
+    await databaseService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      }, // filter
+      [
+        {
+          $set: {
+            forgot_password_token,
+            updated_at: '$$NOW' // lấy thời gian hiện tại khi nó lên đến mongo - đây là thuộc tính của mongo
+          }
+        }
+      ]
+    )
+    // giả lập gửi mail
+    console.log(forgot_password_token)
+    return { message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD }
   }
 }
 
