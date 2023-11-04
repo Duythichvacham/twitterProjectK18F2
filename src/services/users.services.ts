@@ -13,39 +13,39 @@ import HTTP_STATUS from '~/constants/httpstatus'
 config()
 class UserService {
   // hàm nhận vào user_id và bỏ vào payload để tạo access_token
-  private signAccessToken(user_id: string) {
+  private signAccessToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
     return signToken({
       // không await vì khi nào tạo mới cần await và k async vì no signToken đã là promise
-      payload: { user_id, token_type: TokenType.AccessToken },
+      payload: { user_id, token_type: TokenType.AccessToken, verify },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
       options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
     })
   }
   // hàm nhận vào user_id và bỏ vào payload để tạo Refresh_token
-  private signRefreshToken(user_id: string) {
+  private signRefreshToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
     return signToken({
-      payload: { user_id, token_type: TokenType.AccessToken },
+      payload: { user_id, token_type: TokenType.AccessToken, verify },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
       options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN }
     })
   }
-  private signAccessTokenAndRefreshToken(user_id: string) {
-    return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
-  }
   // email_verify_token:string
-  private signEmailVerifyToken(user_id: string) {
+  private signEmailVerifyToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
     return signToken({
-      payload: { user_id, token_type: TokenType.EmailVerificationToken },
+      payload: { user_id, token_type: TokenType.EmailVerificationToken, verify },
       privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string,
       options: { expiresIn: process.env.EMAIL_VERIFY_TOKEN_EXPIRE_IN }
     })
   }
-  private signForgotPassword(user_id: string) {
+  private signForgotPassword({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
     return signToken({
-      payload: { user_id, token_type: TokenType.EmailVerificationToken },
+      payload: { user_id, token_type: TokenType.EmailVerificationToken, verify },
       privateKey: process.env.JWT_SECRET_FORGOT_PASSWORD_TOKEN as string,
       options: { expiresIn: process.env.FORGOT_PASSWORD_TOKEN_EXPIRE_IN }
     })
+  }
+  private signAccessTokenAndRefreshToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+    return Promise.all([this.signAccessToken({ user_id, verify }), this.signRefreshToken({ user_id, verify })])
   }
   async checkEmailExist(email: string) {
     const user = await databaseService.users.findOne({ email })
@@ -54,7 +54,11 @@ class UserService {
   async register(payload: RegisterReqBody) {
     // tự tạo user_id thay vì để nó tự tạo để ký EmailVerifyToken dễ hơn
     const user_id = new ObjectId()
-    const email_verify_token = await this.signEmailVerifyToken(user_id.toString())
+    // đăng ký thì nó ở trạng thái chưa verify
+    const email_verify_token = await this.signEmailVerifyToken({
+      user_id: user_id.toString(),
+      verify: UserVerifyStatus.Unverified
+    })
     const result = await databaseService.users.insertOne(
       // thằng insertOne này trả rằng thằng mình mới tạo nên phải hứng
       // hành động xử lý data trong db mất tg nên phải đợi
@@ -67,7 +71,10 @@ class UserService {
       })
     )
     //object_id mongo nó tự tạo ra -
-    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken(user_id.toString())
+    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken({
+      user_id: user_id.toString(),
+      verify: UserVerifyStatus.Unverified
+    })
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
@@ -79,8 +86,12 @@ class UserService {
     console.log(email_verify_token)
     return { access_token, refresh_token }
   }
-  async login(user_id: string) {
-    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken(user_id)
+  async login({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+    // lấy verify
+    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken({
+      user_id,
+      verify
+    })
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
@@ -95,7 +106,7 @@ class UserService {
     return { message: USERS_MESSAGES.LOGOUT_SUCCESS }
   }
   async verifyEmail(user_id: string) {
-    // cập nhật lại user
+    // cập nhật lại user - đã verify trước đó r - thằng này chỉ có nhiệm vụ update => verify = 1
     await databaseService.users.updateOne(
       {
         _id: new ObjectId(user_id)
@@ -111,7 +122,10 @@ class UserService {
       ]
     )
     // tạo accessToken và refreshToken - để khi nó verify xong thì nó tự đăng nhập luôn
-    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken(user_id)
+    const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken({
+      user_id,
+      verify: UserVerifyStatus.Verified
+    })
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
@@ -122,7 +136,8 @@ class UserService {
     return { access_token, refresh_token }
   }
   async resendEmailVerify(user_id: string) {
-    const email_verify_token = await this.signEmailVerifyToken(user_id)
+    // nếu nó đã đến đây tức là 100% nó chưa verify nếu k đã bị chặn trước đó
+    const email_verify_token = await this.signEmailVerifyToken({ user_id, verify: UserVerifyStatus.Unverified })
     // cập nhật lại user
     await databaseService.users.updateOne(
       {
@@ -141,8 +156,8 @@ class UserService {
     console.log(email_verify_token)
     return { message: USERS_MESSAGES.RESEND_EMAIL_VERIFY_SUCCESS }
   }
-  async forgotPassword(user_id: string) {
-    const forgot_password_token = await this.signForgotPassword(user_id)
+  async forgotPassword({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+    const forgot_password_token = await this.signForgotPassword({ user_id, verify })
     // cập nhật lại user
     await databaseService.users.updateOne(
       {

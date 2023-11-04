@@ -20,7 +20,8 @@ export const loginController = async (req: Request<ParamsDictionary, any, LoginR
   // server tạo access token và refresh token để đưa cho client
   const user = req.user as User // user này có thể là user or undefined mà mình biết nó là gì nên địng nghĩa luôn
   const user_id = user._id as ObjectId //_id này có thể là ObjId or undefined mà mình biết nó là gì nên địng nghĩa luôn
-  const result = await userService.login(user_id.toString()) // thằng này nó lấy từ user_id nên nó là obj id nên phải toString
+  // verify này có thể là UserVerifyStatus or undefined mà mình biết nó là gì nên địng nghĩa luôn
+  const result = await userService.login({ user_id: user_id.toString(), verify: user.verify }) // thằng này nó lấy từ user_id nên nó là obj id nên phải toString
   return res.status(200).json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,
     result
@@ -94,9 +95,9 @@ export const resendEmailVerifyController = async (req: Request, res: Response) =
 // forgot password
 export const forgotPasswordController = async (req: Request, res: Response) => {
   // lấy user_id từ req.user
-  const { _id } = req.user as User
+  const { _id, verify } = req.user as User
   // update  lại  forgot_password_token
-  const result = await userService.forgotPassword((_id as ObjectId).toString())
+  const result = await userService.forgotPassword({ user_id: (_id as ObjectId).toString(), verify })
   return res.json(result)
 }
 export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {

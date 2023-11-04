@@ -1,5 +1,5 @@
 import { JwtPayload } from 'jsonwebtoken'
-import { TokenType } from '~/constants/enums'
+import { TokenType, UserVerifyStatus } from '~/constants/enums'
 
 // định nghĩa body của Requset
 export interface RegisterReqBody {
@@ -25,4 +25,5 @@ export interface resetPasswordReqBody {
 export interface TokenPayLoad extends JwtPayload {
   user_id: string
   token_type: TokenType
+  verify: UserVerifyStatus
 }
