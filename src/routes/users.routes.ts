@@ -2,9 +2,11 @@ import { Router } from 'express'
 import {
   emailVerifyController,
   forgotPasswordController,
+  getMeController,
   loginController,
   logoutController,
   resendEmailVerifyController,
+  resetPasswordController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controller'
 import {
@@ -14,14 +16,16 @@ import {
   loginValidator,
   refreshTokenValidator,
   registerValidator,
+  resetPasswordValidator,
   verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'
 const usersRouter = Router()
 import { wrapAsync } from '~/utils/handler'
 import { verify } from 'crypto'
+import { wrap } from 'module'
 //controller - Router
-usersRouter.get('/login', loginValidator, wrapAsync(loginController))
+usersRouter.post('/login', loginValidator, wrapAsync(loginController))
 /*
 // quy ước: value trong mongo dùng cú pháp snake_case
 Description: Register new user
@@ -99,4 +103,31 @@ usersRouter.post(
   verifyForgotPasswordTokenValidator,
   wrapAsync(verifyForgotPasswordTokenController)
 )
+/**des:reset-password - mô phỏng trang đổi pass :V
+ * method: post
+ * path: /users/reset-password
+ * header: k cần vì nó quên pass r còn đâu
+ * body:{
+ * forgot_password_token: string
+ * password: string
+ * confirm_password: string
+ * }
+ */
+usersRouter.post(
+  '/reset-password',
+
+  verifyForgotPasswordTokenValidator,
+  resetPasswordValidator,
+
+  wrapAsync(resetPasswordController)
+)
+/*
+des: get profile của user
+path: '/me'
+method: get
+Header: {Authorization: Bearer <access_token>}
+body: {}
+*/
+usersRouter.get('/me', accessTokenValidator, wrapAsync(getMeController))
 export default usersRouter
+// lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......

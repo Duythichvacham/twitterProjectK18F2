@@ -43,7 +43,9 @@ export const USERS_MESSAGES = {
   FORGOT_PASSWORD_TOKEN_IS_REQUIRED: 'Forgot password token is required',
   FORGOT_PASSWORD_TOKEN_NOT_MATCH: 'Forgot password token not match',
   FORGOT_PASSWORD_TOKEN_SUCCESS: 'Forgot password token success',
-  VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token success'
+  VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token success',
+  RESET_PASSWORD_SUCCESS: 'Reset password success',
+  GET_ME_SUCCESS: 'get me success'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client

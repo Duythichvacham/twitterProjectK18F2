@@ -1,7 +1,13 @@
 import { NextFunction, Request, Response } from 'express'
 import userService from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { LoginReqBody, LogoutReqBody, RegisterReqBody, TokenPayLoad } from '~/models/requests/User.requests'
+import {
+  LoginReqBody,
+  LogoutReqBody,
+  RegisterReqBody,
+  TokenPayLoad,
+  resetPasswordReqBody
+} from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
@@ -97,5 +103,26 @@ export const verifyForgotPasswordTokenController = async (req: Request, res: Res
   // đã làm hết ở middleware: verifyForgotPasswordTokenValidator - đối chiếu các thứ
   return res.json({
     message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, resetPasswordReqBody>,
+  res: Response
+) => {
+  // muốn update new pass thì phải có user_id và new pass
+  const { user_id } = req.decoded_forgot_password_token as TokenPayLoad
+  const { password } = req.body
+  // update password for user
+  const result = await userService.resetPassword({ user_id, password }) // nếu tên property trùng tên biến thì k cần ghi lại
+  return res.json(result)
+}
+export const getMeController = async (req: Request, res: Response) => {
+  // muốn lấy thông tin user thì cần user_id
+  const { user_id } = req.decoded_authorization as TokenPayLoad
+  // vào db và lấy tt
+  const user = await userService.getMe(user_id)
+  return res.json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
   })
 }
