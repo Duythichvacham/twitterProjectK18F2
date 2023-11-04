@@ -38,3 +38,6 @@ export interface UpdateMeReqBody {
   cover_photo?: string
 }
 //vì đây là route patch nên ngta truyền thiếu 1 trong các prop trên cũng k sao
+export interface GetProfileReqParams {
+  username: string
+}

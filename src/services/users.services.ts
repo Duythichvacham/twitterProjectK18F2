@@ -65,6 +65,7 @@ class UserService {
       new User({
         ...payload,
         _id: user_id,
+        username: `user${user_id.toString()}`, // tạo sẵn - muốn thì chỉnh
         date_of_birth: new Date(payload.date_of_birth), // overide - do thằng này có sẵn trong db r nhưng mình k muốn chọn
         password: hashPassword(payload.password), // mã hóa code theo chuẩn sha256
         email_verify_token
@@ -235,6 +236,25 @@ class UserService {
         }
       }
     )
+    return user
+  }
+  async getProfile(username: string) {
+    const user = await databaseService.users.findOne(
+      { username },
+      {
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0,
+          verify: 0,
+          create_at: 0,
+          updated_at: 0
+        }
+      }
+    )
+    if (!user) {
+      throw new ErrorWithStatus({ message: USERS_MESSAGES.USER_NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
+    }
     return user
   }
 }

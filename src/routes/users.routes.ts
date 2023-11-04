@@ -3,6 +3,7 @@ import {
   emailVerifyController,
   forgotPasswordController,
   getMeController,
+  getProfileController,
   loginController,
   logoutController,
   resendEmailVerifyController,
@@ -25,6 +26,8 @@ import {
 import { registerController } from '~/controllers/users.controller'
 const usersRouter = Router()
 import { wrapAsync } from '~/utils/handler'
+import { filterMiddleware } from '~/middlewares/common.middlewares'
+import { UpdateMeReqBody } from '~/models/requests/User.requests'
 
 //controller - Router
 usersRouter.post('/login', loginValidator, wrapAsync(loginController))
@@ -136,6 +139,29 @@ usersRouter.get('/me', accessTokenValidator, wrapAsync(getMeController))
 // access_token - khi mình tạo ra chứa verify = 0 - khi mình verify thành 1 trên server - thằng access vẫn giữ nguyên trạng thái
 // chỉnh : sử dụng socket.io: nó có khả năng bắn ngược req cho sv - reset lại access_token của nó
 // :V có thể login lại cho nó cập nhật lại access_token
-usersRouter.patch('/me', accessTokenValidator, verifiedUserValidator, updateMeValidator, wrapAsync(updateMeController))
+usersRouter.patch(
+  '/me',
+  accessTokenValidator,
+  verifiedUserValidator,
+  filterMiddleware<UpdateMeReqBody>([
+    // lọc ra những thằng mình muốn update - deo được truyền thêm thằng nào vào đây
+    'name',
+    'date_of_birth',
+    'bio',
+    'location',
+    'website',
+    'avatar',
+    'username',
+    'cover_photo'
+  ]),
+  updateMeValidator,
+  wrapAsync(updateMeController)
+)
+/**des: get profile của user khác bằng username
+ * path: '/:username'
+ * method: get
+ * k cần headers vì k cần đăng nhập cũng xem đc
+ */
+usersRouter.get('/:username', wrapAsync(getProfileController))
 export default usersRouter
 // lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......
