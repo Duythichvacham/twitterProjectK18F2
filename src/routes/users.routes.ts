@@ -7,6 +7,7 @@ import {
   logoutController,
   resendEmailVerifyController,
   resetPasswordController,
+  updateMeController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controller'
 import {
@@ -17,13 +18,14 @@ import {
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  updateMeValidator,
+  verifiedUserValidator,
   verifyForgotPasswordTokenValidator
 } from '~/middlewares/users.middlewares'
 import { registerController } from '~/controllers/users.controller'
 const usersRouter = Router()
 import { wrapAsync } from '~/utils/handler'
-import { verify } from 'crypto'
-import { wrap } from 'module'
+
 //controller - Router
 usersRouter.post('/login', loginValidator, wrapAsync(loginController))
 /*
@@ -129,5 +131,11 @@ Header: {Authorization: Bearer <access_token>}
 body: {}
 */
 usersRouter.get('/me', accessTokenValidator, wrapAsync(getMeController))
+
+// phải đăng nhập r - có authorization mới được update
+// access_token - khi mình tạo ra chứa verify = 0 - khi mình verify thành 1 trên server - thằng access vẫn giữ nguyên trạng thái
+// chỉnh : sử dụng socket.io: nó có khả năng bắn ngược req cho sv - reset lại access_token của nó
+// :V có thể login lại cho nó cập nhật lại access_token
+usersRouter.patch('/me', accessTokenValidator, verifiedUserValidator, updateMeValidator, wrapAsync(updateMeController))
 export default usersRouter
 // lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......

@@ -6,6 +6,7 @@ import {
   LogoutReqBody,
   RegisterReqBody,
   TokenPayLoad,
+  UpdateMeReqBody,
   resetPasswordReqBody
 } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
@@ -126,4 +127,12 @@ export const getMeController = async (req: Request, res: Response) => {
     message: USERS_MESSAGES.GET_ME_SUCCESS,
     result: user
   })
+}
+export const updateMeController = async (req: Request<ParamsDictionary, any, UpdateMeReqBody>, res: Response) => {
+  // muốn update thì cần user_id và thông tin cần update
+  const { user_id } = req.decoded_authorization as TokenPayLoad
+  const { body } = req // dùng body nhớ định nghĩa cho nó nhắc code :V
+  // update
+  const result = await userService.updateMe({ user_id, payload: body })
+  return res.json({ message: USERS_MESSAGES.UPDATE_ME_SUCCESS, result })
 }

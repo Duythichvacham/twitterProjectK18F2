@@ -27,3 +27,14 @@ export interface TokenPayLoad extends JwtPayload {
   token_type: TokenType
   verify: UserVerifyStatus
 }
+export interface UpdateMeReqBody {
+  name?: string
+  date_of_birth?: string //vì ngta truyền lên string dạng ISO8601, k phải date
+  bio?: string
+  location?: string
+  website?: string
+  username?: string
+  avatar?: string
+  cover_photo?: string
+}
+//vì đây là route patch nên ngta truyền thiếu 1 trong các prop trên cũng k sao
