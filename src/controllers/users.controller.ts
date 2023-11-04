@@ -94,7 +94,8 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
   return res.json(result)
 }
 export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
+  // đã làm hết ở middleware: verifyForgotPasswordTokenValidator - đối chiếu các thứ
   return res.json({
-    message: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_SUCCESS
+    message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
   })
 }

@@ -320,7 +320,7 @@ export const emailVerifyTokenValidator = validate(
                 })
               }
               // nếu đang gửi bị lỗi - nó resend: mình phải xóa mã cũ đưa mã mới => nếu nó khác thằng đang lưu thì cút
-              if (user.verify != UserVerifyStatus.Verified && user.email_verify_token !== value) {
+              if (user.verify !== UserVerifyStatus.Verified && user.email_verify_token !== value) {
                 throw new ErrorWithStatus({
                   message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_NOT_MATCH,
                   status: HTTP_STATUS.UNAUTHORIZED
@@ -356,10 +356,9 @@ export const forgotPasswordValidator = validate(
         trim: true,
         custom: {
           options: async (value, { req }) => {
-            // tìm user có email và pass giống client đưa
             const user = await databaseService.users.findOne({
               email: value
-            }) // vì pass mình mã hóa r
+            })
             if (!user) {
               throw new ErrorWithStatus({
                 message: USERS_MESSAGES.USER_NOT_FOUND,
@@ -400,7 +399,7 @@ export const verifyForgotPasswordTokenValidator = validate(
                 token: value,
                 secretOrPublicKey: process.env.JWT_SECRET_FORGOT_PASSWORD_TOKEN as string
               })
-              ;(req as Request).decoded_forgot_password_token = decoded_forgot_password_token
+              // ;(req as Request).decoded_forgot_password_token = decoded_forgot_password_token
               // lấy user_id từ decoded_forgot_password_token để tìm thằng sở hữu
               const user_id = decoded_forgot_password_token.user_id
               const user = await databaseService.users.findOne({
@@ -413,11 +412,11 @@ export const verifyForgotPasswordTokenValidator = validate(
                 }) // nếu k tìm thấy user thì throw lỗi
               }
               // nếu có user thì check xem bị band chưa
-              req.user = user // lưu user vào req để dùng ở controller
+              // req.user = user // lưu user vào req để dùng ở controller
               // nếu đang gửi bị lỗi - nó resend: mình phải xóa mã cũ đưa mã mới => nếu nó khác thằng đang lưu thì cút
               if (user.forgot_password_token !== value) {
                 throw new ErrorWithStatus({
-                  message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_NOT_MATCH,
+                  message: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_NOT_MATCH,
                   status: HTTP_STATUS.UNAUTHORIZED
                 })
               }
