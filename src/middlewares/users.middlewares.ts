@@ -569,7 +569,6 @@ export const updateMeValidator = validate(
           errorMessage: USERS_MESSAGES.USERNAME_MUST_BE_A_STRING ////messages.ts thêm USERNAME_MUST_BE_A_STRING: 'Username must be a string'
         },
         trim: true,
-
         custom: {
           options: async (value, { req }) => {
             //kiểm tra xem username có đúng chuẩn chưa
@@ -608,5 +607,54 @@ export const unfollowValidator = validate(
       user_id: userIdSchema // thằng này chính là thằng mình muốn unfollow -- tên là user_id vì mình truyền params là tên này
     },
     ['params']
+  )
+)
+export const changePasswordValidator = validate(
+  checkSchema(
+    {
+      old_password: {
+        // k chỉ check validate mà còn check xem old_password có đúng k
+        ...passwordSchema,
+        custom: {
+          options: async (value, { req }) => {
+            const { user_id } = req.decoded_authorization as TokenPayLoad
+            // const user = await databaseService.users.findOne({
+            //   _id: new ObjectId(user_id),
+            //   password: hashPassword(value)
+            // })
+            // if (!user) {
+            //   throw new ErrorWithStatus({
+            //     message: USERS_MESSAGES.OLD_PASSWORD_IS_INCORRECT,
+            //     status: HTTP_STATUS.UNAUTHORIZED
+            //   })
+            // }
+            const user = await databaseService.users.findOne({
+              _id: new ObjectId(user_id)
+            })
+            // check xem user có tồn tại k - đáng ra k cần vì đăng nhập rồi mới đổi được pass => nếu theo hướng đổi k cần đăng nhập
+            //=> k đăng nhập lấy loz đâu ra access
+            if (!user) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.USER_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            // check xem old_password có đúng k
+            const { password } = user
+            const isMatch = password === hashPassword(value)
+            if (!isMatch) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.OLD_PASSWORD_IS_INCORRECT,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            return true
+          }
+        }
+      },
+      password: passwordSchema,
+      confirm_password: confirmPasswordSchema
+    },
+    ['body']
   )
 )

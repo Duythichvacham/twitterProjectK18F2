@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  changePasswordController,
   emailVerifyController,
   followController,
   forgotPasswordController,
@@ -15,6 +16,7 @@ import {
 } from '~/controllers/users.controller'
 import {
   accessTokenValidator,
+  changePasswordValidator,
   emailVerifyTokenValidator,
   followValidator,
   forgotPasswordValidator,
@@ -165,6 +167,7 @@ usersRouter.patch(
  * path: '/:username'
  * method: get
  * k cần headers vì k cần đăng nhập cũng xem đc
+ * // nên unique username khi update để tránh khi tìm bị trùng
  */
 usersRouter.get('/:username', wrapAsync(getProfileController))
 // follow user - unfollow user - dùng referenced chứ k dùng embedded vì: :v 1 thằng nó có thể follow rất nhiều thằng
@@ -193,6 +196,23 @@ usersRouter.delete(
   verifiedUserValidator,
   unfollowValidator,
   wrapAsync(unfollowController)
+)
+/**Change password
+ * des: change password
+ * path: /users/change-password
+ * method: put - phải nhập lại pass cũ mới được đổi pass mới
+ * header: {Authorization: Bearer <access_token>}
+ * body:{
+ * old_password: string
+ * new_password: string
+ * confirm_new_password: string}
+ */
+usersRouter.put(
+  '/change-password',
+  accessTokenValidator,
+  verifiedUserValidator,
+  changePasswordValidator,
+  wrapAsync(changePasswordController)
 )
 export default usersRouter
 // lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......

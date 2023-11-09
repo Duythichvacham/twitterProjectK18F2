@@ -10,7 +10,8 @@ import {
   UpdateMeReqBody,
   ResetPasswordReqBody,
   FollowReqBody,
-  UnfollowReqParams
+  UnfollowReqParams,
+  ChangePasswordReqBody
 } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
@@ -170,6 +171,20 @@ export const unfollowController = async (req: Request<UnfollowReqParams>, res: R
   const { user_id: followed_user_id } = req.params // user truyền lên để unfollow - trùng tên đặt lại cho nó
   // unfollow
   const result = await userService.unfollow({ user_id, followed_user_id })
+  return res.json({
+    result
+  })
+}
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  // muốn change password thì cần user_id và old_password, new_password
+  const { user_id } = req.decoded_authorization as TokenPayLoad
+  const { password } = req.body
+  // change password
+  const result = await userService.changePassword({ user_id, password })
   return res.json({
     result
   })

@@ -295,6 +295,23 @@ class UserService {
     })
     return { message: USERS_MESSAGES.UNFOLLOW_SUCCESS }
   }
+  async changePassword({ user_id, password }: { user_id: string; password: string }) {
+    // tìm và update pass
+    await databaseService.users.findOneAndUpdate(
+      {
+        _id: new ObjectId(user_id)
+      },
+      [
+        {
+          $set: {
+            password: hashPassword(password),
+            updated_at: '$$NOW' // lấy thời gian hiện tại khi nó lên đến mongo - đây là thuộc tính của mongo
+          }
+        }
+      ]
+    )
+    return { message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS }
+  }
 }
 
 const userService = new UserService()
