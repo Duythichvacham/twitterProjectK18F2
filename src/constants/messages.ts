@@ -63,7 +63,10 @@ export const USERS_MESSAGES = {
   USER_ALREADY_FOLLOWED: 'User already followed',
   FOLLOW_SUCCESS: 'Follow success',
   USER_NOT_FOLLOWED: 'User not followed',
-  UNFOLLOW_SUCCESS: 'Unfollow success'
+  UNFOLLOW_SUCCESS: 'Unfollow success',
+  USERNAME_IS_INVALID:
+    'Username must be a string and length must be 4 - 15, and contain only letters, numbers, and underscores, not only numbers',
+  USERNAME_ALREADY_EXISTS: 'Username already exists'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client
