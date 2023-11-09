@@ -2,12 +2,15 @@ import { NextFunction, Request, Response } from 'express'
 import userService from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
 import {
+  GetProfileReqParams,
   LoginReqBody,
   LogoutReqBody,
   RegisterReqBody,
   TokenPayLoad,
   UpdateMeReqBody,
-  resetPasswordReqBody
+  ResetPasswordReqBody,
+  FollowReqBody,
+  UnfollowReqParams
 } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
@@ -108,7 +111,7 @@ export const verifyForgotPasswordTokenController = async (req: Request, res: Res
   })
 }
 export const resetPasswordController = async (
-  req: Request<ParamsDictionary, any, resetPasswordReqBody>,
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
   res: Response
 ) => {
   // muốn update new pass thì phải có user_id và new pass
@@ -137,13 +140,37 @@ export const updateMeController = async (req: Request<ParamsDictionary, any, Upd
   const result = await userService.updateMe({ user_id, payload: body })
   return res.json({ message: USERS_MESSAGES.UPDATE_ME_SUCCESS, result })
 }
-export const getProfileController = async (req: Request, res: Response) => {
+export const getProfileController = async (req: Request<GetProfileReqParams>, res: Response) => {
   // muốn lấy thông tin user thì cần user_id
-  const { username } = req.params
+  const { username } = req.params // đụng đến req => định nghĩa lại
   // vào db và lấy tt
   const user = await userService.getProfile(username)
   return res.json({
     message: USERS_MESSAGES.GET_PROFILE_SUCCESS,
     result: user
+  })
+}
+export const followController = async (
+  req: Request<ParamsDictionary, any, FollowReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  // muốn follow thì cần user_id và followed_user_id
+  const { user_id } = req.decoded_authorization as TokenPayLoad
+  const { followed_user_id } = req.body
+  // follow
+  const result = await userService.follow({ user_id, followed_user_id })
+  return res.json({
+    result
+  })
+}
+export const unfollowController = async (req: Request<UnfollowReqParams>, res: Response, next: NextFunction) => {
+  // muốn unfollow thì cần user_id và unfollowed_user_id
+  const { user_id } = req.decoded_authorization as TokenPayLoad // user đang đi unfollow
+  const { user_id: followed_user_id } = req.params // user truyền lên để unfollow - trùng tên đặt lại cho nó
+  // unfollow
+  const result = await userService.unfollow({ user_id, followed_user_id })
+  return res.json({
+    result
   })
 }

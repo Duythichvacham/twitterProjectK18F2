@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   emailVerifyController,
+  followController,
   forgotPasswordController,
   getMeController,
   getProfileController,
@@ -8,17 +9,20 @@ import {
   logoutController,
   resendEmailVerifyController,
   resetPasswordController,
+  unfollowController,
   updateMeController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controller'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  followValidator,
   forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  unfollowValidator,
   updateMeValidator,
   verifiedUserValidator,
   verifyForgotPasswordTokenValidator
@@ -163,5 +167,32 @@ usersRouter.patch(
  * k cần headers vì k cần đăng nhập cũng xem đc
  */
 usersRouter.get('/:username', wrapAsync(getProfileController))
+// follow user - unfollow user - dùng referenced chứ k dùng embedded vì: :v 1 thằng nó có thể follow rất nhiều thằng
+//nếu ta nhúng thì tìm thằng user đó follow những ai rất dễ nhưng tìm thằng nào follow thằng user đó thì khó
+// => dễ đầy dung lượng (1 doc 16mb), bất tiện => dùng referenced
+/**Description: follow user with user_id - (nếu username là độc nhất sao k dùng nó :V)
+ * method: post
+ * path: /users/follow
+ * header: {Authorization: Bearer <access_token>}
+ * body:{
+ * followed_user_id: string}
+ */
+usersRouter.post('/follow', accessTokenValidator, verifiedUserValidator, followValidator, wrapAsync(followController))
+/*
+    des: unfollow someone
+    path: '/follow/:user_id'
+    method: delete
+    headers: {Authorization: Bearer <access_token>}
+  g}
+    */
+// k extends PraamsDictionary sẽ bị lỗi - tuy nhiên ở getProfile thì k cần
+// => lí do: ở getProfile nó chỉ xài params ở controller còn thằng này ở cả body và controller nên k dc phép
+usersRouter.delete(
+  '/follow/:user_id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  unfollowValidator,
+  wrapAsync(unfollowController)
+)
 export default usersRouter
 // lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......

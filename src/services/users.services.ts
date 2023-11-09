@@ -257,6 +257,44 @@ class UserService {
     }
     return user
   }
+  async follow({ user_id, followed_user_id }: { user_id: string; followed_user_id: string }) {
+    // tìm xem đã follow chưa
+    const isFollowed = await databaseService.follwers.findOne({
+      user_id: new ObjectId(user_id),
+      followed_user_id: new ObjectId(followed_user_id)
+    })
+    // nếu đã follow rồi thì k cần follow nữa - thật ra thì khi mình follow rồi nó sẽ tự động hiện unfollow => k thể follow lại
+    if (isFollowed) {
+      // này éo phải error :V
+      return { message: USERS_MESSAGES.USER_ALREADY_FOLLOWED }
+    }
+    // nếu chưa follow
+    await databaseService.follwers.insertOne({
+      // éo cần await cũng đc vì mình đâu có cần hứng kq :V - mình chỉ cần nó thực hiện
+      user_id: new ObjectId(user_id), // thằng nào follow
+      followed_user_id: new ObjectId(followed_user_id), // thằng nào được follow
+      created_at: new Date()
+    })
+    return { message: USERS_MESSAGES.FOLLOW_SUCCESS }
+  }
+  async unfollow({ user_id, followed_user_id }: { user_id: string; followed_user_id: string }) {
+    // tìm xem có đang follow k
+    const isFollowed = await databaseService.follwers.findOne({
+      user_id: new ObjectId(user_id),
+      followed_user_id: new ObjectId(followed_user_id)
+    })
+    // nếu chưa follow
+    if (!isFollowed) {
+      // này éo phải error :V
+      return { message: USERS_MESSAGES.USER_NOT_FOLLOWED }
+    }
+    // nếu đã follow
+    await databaseService.follwers.deleteOne({
+      user_id: new ObjectId(user_id), // thằng nào cần xóa
+      followed_user_id: new ObjectId(followed_user_id) // thằng nào được xóa
+    })
+    return { message: USERS_MESSAGES.UNFOLLOW_SUCCESS }
+  }
 }
 
 const userService = new UserService()

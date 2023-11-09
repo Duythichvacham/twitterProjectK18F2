@@ -120,6 +120,32 @@ const imageSchema: ParamSchema = {
     errorMessage: USERS_MESSAGES.IMAGE_URL_LENGTH_MUST_BE_FROM_1_TO_400
   }
 }
+const userIdSchema: ParamSchema = {
+  custom: {
+    options: async (value, { req }) => {
+      // kiểm tra xem followed_user_id có theo định dạng object id k
+      // thằng này mongo hỗ trợ để kiểm tra
+      if (!ObjectId.isValid(value)) {
+        throw new ErrorWithStatus({
+          message: USERS_MESSAGES.INVALID_USER_ID,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      // nếu đúng => vào db tìm user xem có id đó k
+      const followed_user = await databaseService.users.findOne({
+        _id: new ObjectId(value)
+      })
+      // nếu k
+      if (!followed_user) {
+        throw new ErrorWithStatus({
+          message: USERS_MESSAGES.USER_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      return true
+    }
+  }
+}
 //body: {email and password}
 export const loginValidator = validate(
   checkSchema(
@@ -554,5 +580,21 @@ export const updateMeValidator = validate(
       cover_photo: imageSchema
     },
     ['body']
+  )
+)
+export const followValidator = validate(
+  checkSchema(
+    {
+      followed_user_id: userIdSchema
+    },
+    ['body']
+  )
+)
+export const unfollowValidator = validate(
+  checkSchema(
+    {
+      user_id: userIdSchema // thằng này chính là thằng mình muốn unfollow -- tên là user_id vì mình truyền params là tên này
+    },
+    ['params']
   )
 )

@@ -58,7 +58,12 @@ export const USERS_MESSAGES = {
   USERNAME_MUST_BE_A_STRING: 'Username must be a string',
   USERNAME_LENGTH_MUST_BE_LESS_THAN_50: 'Username length must be less than 50',
   UPDATE_ME_SUCCESS: 'Update me success',
-  GET_PROFILE_SUCCESS: 'Get profile success'
+  GET_PROFILE_SUCCESS: 'Get profile success',
+  INVALID_USER_ID: 'Invalid user id',
+  USER_ALREADY_FOLLOWED: 'User already followed',
+  FOLLOW_SUCCESS: 'Follow success',
+  USER_NOT_FOLLOWED: 'User not followed',
+  UNFOLLOW_SUCCESS: 'Unfollow success'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client
