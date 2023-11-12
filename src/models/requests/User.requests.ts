@@ -26,6 +26,8 @@ export interface TokenPayLoad extends JwtPayload {
   user_id: string
   token_type: TokenType
   verify: UserVerifyStatus
+  iat: number
+  exp: number
 }
 export interface UpdateMeReqBody {
   name?: string
@@ -51,4 +53,7 @@ export interface ChangePasswordReqBody {
   old_password: string
   password: string
   confirm_password: string
+}
+export interface RefreshTokenReqBody {
+  refresh_token: string
 }

@@ -11,7 +11,8 @@ import {
   ResetPasswordReqBody,
   FollowReqBody,
   UnfollowReqParams,
-  ChangePasswordReqBody
+  ChangePasswordReqBody,
+  RefreshTokenReqBody
 } from '~/models/requests/User.requests'
 import User from '~/models/schemas/User.schema'
 import { ObjectId } from 'mongodb'
@@ -186,6 +187,30 @@ export const changePasswordController = async (
   // change password
   const result = await userService.changePassword({ user_id, password })
   return res.json({
+    result
+  })
+}
+export const oAuthController = async (req: Request, res: Response, next: NextFunction) => {
+  // lấy code từ trong query khi được trả về
+  const { code } = req.query
+  const { access_token, refresh_token, new_user, verify } = await userService.oAuth(code as string)
+  const urlRedirect = `${process.env.CLIENT_REDIRECT_CALLBACK}?access_token=${access_token}&refresh_token=${refresh_token}&new_user=${new_user}&verify=${verify}`
+  return res.redirect(urlRedirect)
+}
+
+export const refreshTokenController = async (
+  req: Request<ParamsDictionary, any, RefreshTokenReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  // khi qua middleware refreshTokenValidator thì ta đã có decoded_refresh_token
+  //chứa user_id và token_type
+  //ta sẽ lấy user_id để tạo ra access_token và refresh_token mới
+  const { user_id, verify, exp } = req.decoded_refresh_token as TokenPayLoad //lấy refresh_token từ req.body
+  const { refresh_token } = req.body
+  const result = await userService.refreshToken({ user_id, verify, refresh_token, exp }) //refreshToken chưa code
+  return res.json({
+    message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS, //message.ts thêm  REFRESH_TOKEN_SUCCESS: 'Refresh token success',
     result
   })
 }

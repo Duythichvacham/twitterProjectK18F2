@@ -9,9 +9,9 @@ export const signToken = ({
   privateKey,
   options = { algorithm: 'HS256' }
 }: {
-  payload: string | object | Buffer
+  payload: any
   privateKey: string
-  options: jwt.SignOptions
+  options?: jwt.SignOptions
 }) => {
   // nó truyền tùm lum thì mình k biết đc nếu k định nghĩa
   return new Promise<string>((resolve, reject) => {

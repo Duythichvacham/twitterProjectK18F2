@@ -8,6 +8,8 @@ import {
   getProfileController,
   loginController,
   logoutController,
+  oAuthController,
+  refreshTokenController,
   resendEmailVerifyController,
   resetPasswordController,
   unfollowController,
@@ -214,5 +216,15 @@ usersRouter.put(
   changePasswordValidator,
   wrapAsync(changePasswordController)
 )
+/*
+  des: refreshtoken
+  path: '/refresh-token'
+  method: POST
+  Body: {refresh_token: string}
+g}
+  */
+usersRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenController))
+usersRouter.get('/oauth/google', wrapAsync(oAuthController))
+
 export default usersRouter
 // lưu thêm trạng thái của user vào token luôn  - đỡ phải lấy user_id vào kiếm user......

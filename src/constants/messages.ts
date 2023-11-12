@@ -68,7 +68,10 @@ export const USERS_MESSAGES = {
     'Username must be a string and length must be 4 - 15, and contain only letters, numbers, and underscores, not only numbers',
   USERNAME_ALREADY_EXISTS: 'Username already exists',
   OLD_PASSWORD_IS_INCORRECT: 'Old password is incorrect',
-  CHANGE_PASSWORD_SUCCESS: 'Change password success'
+  CHANGE_PASSWORD_SUCCESS: 'Change password success',
+  EMAIL_NOT_VERIFIED: 'Email not verified',
+  UPLOAD_SUCCESS: 'Upload success',
+  REFRESH_TOKEN_SUCCESS: 'Refresh token success'
 } as const
 // thống nhất code tránh việc viết thông báo tùm lum - mốt cần sửa thì chỉ cần sửa ở đây
 // lưu những đoạn string mình dùng để giao tiếp với client

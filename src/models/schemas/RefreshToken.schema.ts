@@ -6,6 +6,8 @@ interface RefreshTokenType {
   token: string
   created_at?: Date // k có cũng đc, khi tạo object thì ta sẽ new Date() sau
   user_id: ObjectId
+  iat: number // thời gian tạo token
+  exp: number // thời gian hết hạn token
 }
 //class dùng để tạo ra đối tượng
 //class sẽ thông qua interface
@@ -17,10 +19,14 @@ export default class RefreshToken {
   token: string
   created_at: Date
   user_id: ObjectId
-  constructor({ _id, token, created_at, user_id }: RefreshTokenType) {
+  iat: Date // thời gian tạo token -- lưu trên mongo thì lưu dạng Date để nó đọc
+  exp: Date // thời gian hết hạn token
+  constructor({ _id, token, created_at, user_id, iat, exp }: RefreshTokenType) {
     this._id = _id
     this.token = token
     this.created_at = created_at || new Date()
     this.user_id = user_id
+    this.iat = new Date(iat * 1000) // thời gian tạo token -- lưu trên mongo thì lưu dạng Date để nó đọc
+    this.exp = new Date(exp * 1000) // thời gian hết hạn token
   }
 }

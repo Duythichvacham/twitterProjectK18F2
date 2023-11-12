@@ -3,16 +3,23 @@ import databaseService from './database.services'
 import { RegisterReqBody, UpdateMeReqBody } from '~/models/requests/User.requests'
 import { hashPassword } from '~/utils/crypto'
 import { TokenType, UserVerifyStatus } from '~/constants/enums'
-import { signToken } from '~/utils/jwt'
+import { signToken, verifyToken } from '~/utils/jwt'
 import { config } from 'dotenv'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { ObjectId } from 'mongodb'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpstatus'
+import axios from 'axios'
 config()
 class UserService {
   // hàm nhận vào user_id và bỏ vào payload để tạo access_token
+  private decodeRefreshToken(refresh_token: string) {
+    return verifyToken({
+      token: refresh_token,
+      secretOrPublicKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+    })
+  }
   private signAccessToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
     return signToken({
       // không await vì khi nào tạo mới cần await và k async vì no signToken đã là promise
@@ -22,12 +29,20 @@ class UserService {
     })
   }
   // hàm nhận vào user_id và bỏ vào payload để tạo Refresh_token
-  private signRefreshToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
-    return signToken({
-      payload: { user_id, token_type: TokenType.AccessToken, verify },
-      privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
-      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN }
-    })
+  private signRefreshToken({ user_id, verify, exp }: { user_id: string; verify: UserVerifyStatus; exp?: number }) {
+    if (exp) {
+      // k dùng option: nó đôn ngày hết hạn lên
+      return signToken({
+        payload: { user_id, token_type: TokenType.RefreshToken, verify, exp },
+        privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+      })
+    } else {
+      return signToken({
+        payload: { user_id, token_type: TokenType.AccessToken, verify },
+        privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
+        options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN }
+      })
+    }
   }
   // email_verify_token:string
   private signEmailVerifyToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
@@ -76,11 +91,14 @@ class UserService {
       user_id: user_id.toString(),
       verify: UserVerifyStatus.Unverified
     })
+    const { iat, exp } = await this.decodeRefreshToken(refresh_token)
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
         token: refresh_token,
-        user_id: new ObjectId(user_id)
+        user_id: new ObjectId(user_id),
+        iat,
+        exp
       })
     )
     // giả lập gửi mail
@@ -93,11 +111,14 @@ class UserService {
       user_id,
       verify
     })
+    const { iat, exp } = await this.decodeRefreshToken(refresh_token)
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
         token: refresh_token,
-        user_id: new ObjectId(user_id.toString())
+        user_id: new ObjectId(user_id.toString()),
+        iat,
+        exp
       })
     )
     return { access_token, refresh_token }
@@ -127,11 +148,14 @@ class UserService {
       user_id,
       verify: UserVerifyStatus.Verified
     })
+    const { iat, exp } = await this.decodeRefreshToken(refresh_token)
     // lưu refresh_token vào db
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
         token: refresh_token,
-        user_id: new ObjectId(user_id)
+        user_id: new ObjectId(user_id),
+        iat,
+        exp
       })
     )
     return { access_token, refresh_token }
@@ -311,6 +335,128 @@ class UserService {
       ]
     )
     return { message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS }
+  }
+  private async getOAuthGoogleToken(code: string) {
+    const body = {
+      // body sẽ truyền lên server
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+      grant_type: 'authorization_code'
+    }
+    const { data } = await axios.post('https://oauth2.googleapis.com/token', body, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    return data as {
+      access_token: string
+      id_token: string
+    }
+  }
+
+  private async getGoogleUserInfo(access_token: string, id_token: string) {
+    const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      params: {
+        access_token,
+        alt: 'json'
+      },
+      headers: {
+        Authorization: `Bearer ${id_token}`
+      }
+    })
+    return data as {
+      id: string
+      email: string
+      email_verified: boolean
+      name: string
+      given_name: string
+      family_name: string
+      picture: string
+      locale: string
+    }
+  }
+  async oAuth(code: string) {
+    const { access_token, id_token } = await this.getOAuthGoogleToken(code)
+    const userInfor = await this.getGoogleUserInfo(access_token, id_token)
+    // check xem verify chưa
+    if (!userInfor.email_verified) {
+      throw new ErrorWithStatus({ message: USERS_MESSAGES.EMAIL_NOT_VERIFIED, status: HTTP_STATUS.UNAUTHORIZED })
+    }
+    //kiểm tra xem email tồn tại trong db chưa vì: nếu tồn tại thì nó sẽ đăng nhập - nếu k thì nó sẽ đăng ký
+    const user = await databaseService.users.findOne({ email: userInfor.email })
+    if (user) {
+      const [access_token, refresh_token] = await this.signAccessTokenAndRefreshToken({
+        user_id: user._id.toString(),
+        verify: user.verify
+      })
+      const { iat, exp } = await this.decodeRefreshToken(refresh_token)
+      // lưu lại refresh_token
+      await databaseService.refreshTokens.insertOne(
+        new RefreshToken({
+          token: refresh_token,
+          user_id: new ObjectId(user._id),
+          iat,
+          exp
+        })
+      )
+      return {
+        access_token,
+        refresh_token,
+        new_user: 0,
+        verify: user.verify
+      }
+    } else {
+      const password = Math.random().toString(36).slice(1, 15)
+      // nó đăng nhập = email thông qua gg => bản chất là đăng nhập = giao thức - chả biết pass
+      const data = await this.register({
+        email: userInfor.email,
+        password,
+        confirm_password: password,
+        name: userInfor.name,
+        date_of_birth: new Date().toISOString()
+      })
+      return {
+        ...data,
+        new_user: 1,
+        verify: UserVerifyStatus.Unverified
+      }
+    }
+  }
+  // thêm exp: ngày hết hạn (cũ) để tạo mới refresh_token
+  async refreshToken({
+    user_id,
+    verify,
+    refresh_token,
+    exp
+  }: {
+    user_id: string
+    verify: UserVerifyStatus
+    refresh_token: string
+    exp: number
+  }) {
+    //tạo mới
+    const [new_access_token, new_refresh_token] = await Promise.all([
+      this.signAccessToken({
+        user_id: user_id,
+        verify
+      }),
+      this.signRefreshToken({
+        user_id: user_id,
+        verify,
+        exp
+      })
+    ])
+    const { iat } = await this.decodeRefreshToken(new_refresh_token)
+    //vì một người đăng nhập ở nhiều nơi khác nhau, nên họ sẽ có rất nhiều document trong collection refreshTokens
+    //ta không thể dùng user_id để tìm document cần update, mà phải dùng token, đọc trong RefreshToken.schema.ts
+    await databaseService.refreshTokens.deleteOne({ token: refresh_token }) //xóa refresh
+    //insert lại document mới
+    await databaseService.refreshTokens.insertOne(
+      new RefreshToken({ user_id: new ObjectId(user_id), token: new_refresh_token, iat, exp })
+    )
+    return { access_token: new_access_token, refresh_token: new_refresh_token }
   }
 }
 
