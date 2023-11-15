@@ -31,6 +31,7 @@ class UserService {
   // hàm nhận vào user_id và bỏ vào payload để tạo Refresh_token
   private signRefreshToken({ user_id, verify, exp }: { user_id: string; verify: UserVerifyStatus; exp?: number }) {
     if (exp) {
+      // nếu có exp thì t tạo refresh có hsd cũ
       // k dùng option: nó đôn ngày hết hạn lên
       return signToken({
         payload: { user_id, token_type: TokenType.RefreshToken, verify, exp },
@@ -93,6 +94,7 @@ class UserService {
     })
     const { iat, exp } = await this.decodeRefreshToken(refresh_token)
     // lưu refresh_token vào db
+    // lưu thêm exp giúp dễ tìm kiếm - deo ai rảnh mỗi lần tìm lại decoded ra
     await databaseService.refreshTokens.insertOne(
       new RefreshToken({
         token: refresh_token,

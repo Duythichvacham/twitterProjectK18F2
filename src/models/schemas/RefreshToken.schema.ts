@@ -26,7 +26,7 @@ export default class RefreshToken {
     this.token = token
     this.created_at = created_at || new Date()
     this.user_id = user_id
-    this.iat = new Date(iat * 1000) // thời gian tạo token -- lưu trên mongo thì lưu dạng Date để nó đọc
+    this.iat = new Date(iat * 1000) // thời gian tạo token -- lưu trên mongo thì lưu dạng Date để nó đọc - epoch time sang Date *1000
     this.exp = new Date(exp * 1000) // thời gian hết hạn token
   }
 }
